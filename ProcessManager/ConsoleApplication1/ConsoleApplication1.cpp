@@ -1,9 +1,10 @@
-﻿#include <windows.h>
+#include <windows.h>
 #include <tlhelp32.h>
 #include <psapi.h>
 #include <iostream>
 #include <string>
 #include <map>
+#include <iomanip>
 
 #pragma comment(lib, "psapi.lib")
 
@@ -48,8 +49,12 @@ int main() {
     }
     CloseHandle(hSnapshot);
 
-    std::wcout << L"PID\tProcess Name\t\tPPID\tParent Process Name\n";
-    std::wcout << L"-------------------------------------------------------------\n";
+    std::wcout << std::left
+        << std::setw(8) << L"PID"
+        << std::setw(45) << L"Process Name"
+        << std::setw(8) << L"PPID"
+        << std::setw(45) << L"Parent Process Name" << L"\n";
+    std::wcout << L"-------------------------------------------------------------------------------\n";
 
     for (auto& p : processMap) {
         DWORD pid = p.first;
@@ -67,7 +72,12 @@ int main() {
         if (parentName == L"<unknown>")
             continue; // bỏ nếu process cha không xác định được tên
 
-        std::wcout << pid << L"\t" << pname << L"\t\t" << ppid << L"\t" << parentName << L"\n";
+        std::wcout << std::left
+            << std::setw(8) << pid
+            << std::setw(45) << pname
+            << std::setw(8) << ppid
+            << std::setw(45) << parentName
+            << L"\n";
     }
 
     return 0;
