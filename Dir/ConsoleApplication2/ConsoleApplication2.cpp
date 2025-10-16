@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <iomanip>
+#include <direct.h>
 
 void PrintFileTime(const FILETIME& ft) {
     SYSTEMTIME utc, local;
@@ -81,23 +82,43 @@ void ListFiles(const std::string& path, bool recursive, int depth = 0) {
 }
 
 int main(int argc, char* argv[]) {
+    std::string targetPath;
+    bool recursiveMode = false;
+
+    // Check if the user provided a path argument
     if (argc < 2) {
-        std::cout << "Usage: dir_sim <path> [/s]" << std::endl;
-        return 0;
+        // If no path is provided, use the current working directory
+        char currentDirectory[MAX_PATH];
+        if (_getcwd(currentDirectory, sizeof(currentDirectory)) != NULL) {
+            targetPath = currentDirectory;
+            std::cout << "No directory path was provided." << std::endl;
+            std::cout << "Using the current working directory instead: "
+                << targetPath << std::endl;
+        }
+        else {
+            std::cerr << "Error: Unable to get the current working directory." << std::endl;
+            return 1;
+        }
+    }
+    else {
+        // The first argument is the target directory
+        targetPath = argv[1];
+
+        // Check for optional parameter "/s" (case-insensitive)
+        if (argc >= 3 && (_stricmp(argv[2], "/s") == 0)) {
+            recursiveMode = true;
+        }
     }
 
-    std::string path = argv[1];
-    bool recursive = false;
-
-    if (argc >= 3 && (_stricmp(argv[2], "/s") == 0)) {
-        recursive = true;
-    }
-
-    std::cout << "Listing directory: " << path
-        << (recursive ? " (recursive)" : "") << std::endl;
+    // Display the configuration to the user
+    std::cout << "================================================" << std::endl;
+    std::cout << "Target directory : " << targetPath << std::endl;
+    std::cout << "Recursive listing : "
+        << (recursiveMode ? "Enabled" : "Disabled") << std::endl;
     std::cout << "================================================" << std::endl;
 
-    ListFiles(path, recursive);
+    // Call the directory listing function
+    ListFiles(targetPath, recursiveMode);
 
     return 0;
 }
