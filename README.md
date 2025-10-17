@@ -6,3 +6,10 @@ Bài tập 2: Lập trình chương trình mô phỏng lệnh dir, khi nhập v�
 thị tên các file, thư mục con trong đó. Nếu có tham số /s, hiển thị toàn bộ file nằm trong thư mục
 con của đường dẫn nhập vào.
 Bài tập 3: lập trình chương trình chat nội bộ bằng socket, cho phép 2 màn hình console chat với nhau, sử dụng đa luồng để chat 1 lúc được với nhiều người.
+
+
+
+
+Đã sửa:
+Thêm căn lề vào chương trình liệt kê proceess
+Xử lý khi không có argument đường dẫn bằng cách lấy đường dẫn hiện tài bằng hàm __cwd
