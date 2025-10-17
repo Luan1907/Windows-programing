@@ -1,11 +1,8 @@
 ﻿//==============================================================
-//  Chương trình: Chat Client TCP (Windows, WinSock2)
-//  Mô tả: Kết nối đến server chat, gửi và nhận tin nhắn song song
 //  Hỗ trợ các lệnh:
 //      /list               - Xem danh sách người dùng online
 //      /msg <user> <msg>   - Gửi tin nhắn riêng
 //      /quit               - Thoát khỏi chương trình
-//
 //=========================================================
 
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -142,3 +139,4 @@ int main() {
     std::cout << "Da thoat chuong trinh.\n";
     return 0;
 }
+
