@@ -11,6 +11,6 @@ Bài tập 3: lập trình chương trình chat nội bộ bằng socket, cho ph
 
 
 Đã sửa:
-Thêm căn lề vào chương trình liệt kê proceess bằng setw
-Xử lý khi không có argument đường dẫn bằng cách lấy đường dẫn hiện tài bằng hàm __cwd
-Thêm chức năng private message cho chương trình chat, tính năng chọn tên người dùng khi kết nối đến server, tính năng xem danh sách người dùng online, cho phép chọn port khi khởi động server (cụ thể xem trong comment của code)
+- Thêm căn lề vào chương trình liệt kê proceess bằng setw
+- Xử lý khi không có argument đường dẫn bằng cách lấy đường dẫn hiện tài bằng hàm __cwd
+- Thêm chức năng private message cho chương trình chat, tính năng chọn tên người dùng khi kết nối đến server, tính năng xem danh sách người dùng online, cho phép chọn port khi khởi động server (cụ thể xem trong comment của code)
