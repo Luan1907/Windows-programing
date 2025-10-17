@@ -1,115 +1,144 @@
-﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
+﻿//==============================================================
+//  Chương trình: Chat Client TCP (Windows, WinSock2)
+//  Mô tả: Kết nối đến server chat, gửi và nhận tin nhắn song song
+//  Hỗ trợ các lệnh:
+//      /list               - Xem danh sách người dùng online
+//      /msg <user> <msg>   - Gửi tin nhắn riêng
+//      /quit               - Thoát khỏi chương trình
+//
+//=========================================================
+
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <winsock2.h>
 #include <windows.h>
-#include <stdio.h>
+#include <iostream>
 #include <string>
-#include <stdlib.h>
 
 #pragma comment(lib, "Ws2_32.lib")
 
-#define BUF_SIZE 1024
+#define BUF_SIZE 1024  // Kích thước bộ đệm nhận/gửi
 
+//------------------------------------------------------
+// Cấu trúc chứa thông tin truyền cho luồng nhận tin
+//------------------------------------------------------
 struct ThreadParam {
-    SOCKET sock;
+    SOCKET sock; // Socket kết nối đến server
 };
 
+//------------------------------------------------------
+// Hàm chạy trong luồng phụ: nhận tin nhắn từ server
+//------------------------------------------------------
 DWORD WINAPI RecvThread(LPVOID param) {
     ThreadParam* p = (ThreadParam*)param;
     SOCKET s = p->sock;
     char buf[BUF_SIZE];
+
     while (true) {
+        // Nhận dữ liệu từ server
         int ret = recv(s, buf, BUF_SIZE - 1, 0);
         if (ret <= 0) {
-            printf("Server closed connection or error\n");
+            // Nếu <= 0 nghĩa là server đã ngắt kết nối hoặc lỗi
+            std::cout << "Server da dong ket noi hoac bi loi.\n";
             break;
         }
-        buf[ret] = '\0';
-        printf("%s", buf);
+
+        buf[ret] = '\0';   // Kết thúc chuỗi
+        std::cout << buf;  // In nội dung nhận được ra màn hình
     }
+
     return 0;
 }
 
+//------------------------------------------------------
+// Chương trình chính
+//------------------------------------------------------
 int main() {
     WSADATA wsaData;
     SOCKET clientSock = INVALID_SOCKET;
 
+    // --- Khởi tạo thư viện WinSock ---
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-        printf("WSAStartup failed\n");
+        std::cout << "WSAStartup failed\n";
         return 1;
     }
 
+    // --- Tạo socket TCP ---
     clientSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (clientSock == INVALID_SOCKET) {
-        printf("socket failed\n");
+        std::cout << "Tao socket that bai\n";
         WSACleanup();
         return 1;
     }
 
-    char serverIp[64];
-    int port;
-    printf("Nhap dia chi server (default 127.0.0.1): ");
-    if (fgets(serverIp, sizeof(serverIp), stdin) == NULL) {
-        strcpy_s(serverIp, sizeof(serverIp), "127.0.0.1\n");
-    }
-    if (serverIp[0] == '\n') strcpy_s(serverIp, sizeof(serverIp), "127.0.0.1\n");
-    // remove newline
-    char* pnl = strchr(serverIp, '\n');
-    if (pnl) *pnl = 0;
+    // --- Nhập địa chỉ server ---
+    std::string serverIp;
+    std::cout << "Nhap dia chi server (mac dinh 127.0.0.1): ";
+    std::getline(std::cin, serverIp);
+    if (serverIp.empty()) serverIp = "127.0.0.1";
 
-    char portStr[16];
-    printf("Nhap port (default 54000): ");
-    if (fgets(portStr, sizeof(portStr), stdin) == NULL) {
-        strcpy_s(portStr, sizeof(portStr), "54000\n");
-    }
-    if (portStr[0] == '\n') strcpy_s(portStr, sizeof(portStr), "54000\n");
-    pnl = strchr(portStr, '\n');
-    if (pnl) *pnl = 0;
-    port = atoi(portStr);
+    // --- Nhập cổng ---
+    std::string portStr;
+    std::cout << "Nhap port (mac dinh 54000): ";
+    std::getline(std::cin, portStr);
+    int port = portStr.empty() ? 54000 : std::stoi(portStr);
 
+    // --- Thiết lập thông tin địa chỉ server ---
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(port);
-    serverAddr.sin_addr.s_addr = inet_addr(serverIp);
+    serverAddr.sin_addr.s_addr = inet_addr(serverIp.c_str());
 
+    // --- Kết nối tới server ---
     if (connect(clientSock, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        printf("Could not connect to server %s:%d\n", serverIp, port);
+        std::cout << "Khong the ket noi toi server " << serverIp << ":" << port << "\n";
         closesocket(clientSock);
         WSACleanup();
         return 1;
     }
 
-    printf("Connected to %s:%d\n", serverIp, port);
+    std::cout << "Da ket noi toi " << serverIp << ":" << port << "\n";
+    std::cout << "Lenh ho tro:\n"
+        << "  /list                      - xem danh sach nguoi dung online\n"
+        << "  /msg <username> <noidung>  - gui tin rieng\n"
+        << "  /quit                      - thoat\n\n";
 
-    ThreadParam tp; tp.sock = clientSock;
+    //------------------------------------------------------
+    // Tạo thread phụ để nhận tin nhắn từ server
+    //------------------------------------------------------
+    ThreadParam tp{ clientSock };
     DWORD tid;
     HANDLE h = CreateThread(NULL, 0, RecvThread, &tp, 0, &tid);
     if (!h) {
-        printf("CreateThread failed\n");
+        std::cout << "Tao thread that bai\n";
         closesocket(clientSock);
         WSACleanup();
         return 1;
     }
 
-    // main thread: send input
-    char line[BUF_SIZE];
+    //------------------------------------------------------
+    // Luồng chính: đọc lệnh/tin nhắn từ người dùng và gửi đi
+    //------------------------------------------------------
+    std::string line;
     while (true) {
-        if (!fgets(line, sizeof(line), stdin)) break;
-        int len = (int)strlen(line);
-        if (len == 0) continue;
-        // allow exit command
-        if (strncmp(line, "/quit", 5) == 0) break;
-        int sent = send(clientSock, line, len, 0);
-        if (sent == SOCKET_ERROR) {
-            printf("send failed\n");
+        std::getline(std::cin, line);  // Nhập từ bàn phím
+        if (line.empty()) continue;    // Bỏ qua dòng trống
+
+        // Nếu nhập /quit thì thoát chương trình
+        if (line.rfind("/quit", 0) == 0)
             break;
-        }
+
+        // Gửi dữ liệu tới server
+        send(clientSock, line.c_str(), (int)line.size(), 0);
     }
 
-    // cleanup
+    //------------------------------------------------------
+    // Dọn dẹp tài nguyên trước khi thoát
+    //------------------------------------------------------
     closesocket(clientSock);
-    // Wait for receiver thread to end
-    WaitForSingleObject(h, 2000);
+    WaitForSingleObject(h, 2000); // Chờ luồng nhận tin dừng lại
     CloseHandle(h);
     WSACleanup();
+
+    std::cout << "Da thoat chuong trinh.\n";
     return 0;
 }
